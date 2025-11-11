@@ -1,13 +1,15 @@
 [project]
 name = "sandbox"
 version = "0.1.0"
-description = "Add your description here"
+description = "A sandbox for testing and experimenting with Python code."
 readme = "README.md"
 authors = [
     { name = "daveokpare", email = "okparedave@gmail.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "docker>=7.1.0",
+]
 
 [project.scripts]
 sandbox = "sandbox:main"
