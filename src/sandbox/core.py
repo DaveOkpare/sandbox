@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 import docker
+from docker.errors import ImageNotFound
 
 
 @dataclass
@@ -59,13 +60,19 @@ class Sanbox:
             for host_path, container_path in volumes.items():
                 _volumes[host_path] = {"bind": container_path, "mode": "ro"}
 
-        container = client.containers.run(
-            image=image,
-            detach=True,
-            remove=remove,
-            volumes=_volumes,
-            working_dir="/workspace",
-        )
+        try:
+            container = client.containers.run(
+                image=image,
+                detach=True,
+                remove=remove,
+                volumes=_volumes,
+                working_dir="/workspace",
+            )
+        except ImageNotFound:
+            raise RuntimeError(
+                f"Docker image {image} not found."
+                "Please build the image first using 'sandbox-build' or 'docker build -t sandbox:latest .'"
+            )
 
         if packages:
             install_cmd = f"pip install --quiet {' '.join(packages)}"
