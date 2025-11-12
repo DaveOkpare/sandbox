@@ -40,6 +40,9 @@ class Sanbox:
         volumes: Optional[dict[str, str]] = None,
         image: str = "sandbox:latest",
         *,
+        cpu_quota: int = 50000,
+        mem_limit: str = "512m",
+        network_mode: str = "bridge",
         remove: bool = True,
     ):
         """
@@ -48,6 +51,9 @@ class Sanbox:
             packages: List of pip packages to install
             volumes: Dict mapping host paths to container paths (e.g., {"/local": "/workspace"})
             image: Docker image to use (default: "sandbox:latest")
+            cpu_quota: CPU quota for the container (default: 50000)
+            mem_limit: Memory limit for the container (default: "512m")
+            network_mode: Network mode for the container (default: "bridge")
             remove: Remove the container when it has finished running (default: True)
 
         Returns:
@@ -64,6 +70,9 @@ class Sanbox:
             container = client.containers.run(
                 image=image,
                 detach=True,
+                cpu_quota=cpu_quota,
+                mem_limit=mem_limit,
+                network_mode=network_mode,
                 remove=remove,
                 volumes=_volumes,
                 working_dir="/workspace",
