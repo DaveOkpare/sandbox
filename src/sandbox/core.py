@@ -11,7 +11,7 @@ class ExecutionResult:
     stderr: str
 
 
-class Sanbox:
+class Sandbox:
     def __init__(self, client, container) -> None:
         self.client = client
         self.container = container
@@ -25,11 +25,12 @@ class Sanbox:
         self.cleanup()
         return False
 
-    def cleanup(self):
+    def cleanup(self, remove_volume: bool = True):
         """Stop and remove the container."""
         if self.container:
             try:
                 self.container.stop()
+                self.container.remove(v=remove_volume)
             except Exception:
                 pass
 
@@ -108,8 +109,9 @@ class Sanbox:
             ["python3", "-c", code], workdir="/workspace", demux=True
         )
 
-        exit_code = exec_result.exit_code
-        stdout = exec_result[0].decode() if exec_result[0] else ""
-        stderr = exec_result[1].decode() if exec_result[1] else ""
+        # When demux=True, exec_result is a tuple: (exit_code, (stdout_bytes, stderr_bytes))
+        exit_code, (stdout_bytes, stderr_bytes) = exec_result
+        stdout = stdout_bytes.decode("utf-8") if stdout_bytes else ""
+        stderr = stderr_bytes.decode("utf-8") if stderr_bytes else ""
 
         return ExecutionResult(exit_code=exit_code, stdout=stdout, stderr=stderr)
