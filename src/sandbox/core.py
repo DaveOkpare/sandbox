@@ -39,6 +39,7 @@ class Sandbox:
         cls,
         packages: Optional[list[str]] = None,
         volumes: Optional[dict[str, str]] = None,
+        environment: Optional[dict[str, str]] = None,
         image: str = "sandbox:latest",
         *,
         cpu_quota: int = 50000,
@@ -50,6 +51,7 @@ class Sandbox:
         Create a new sandbox instance.
         Args:
             packages: List of pip packages to install
+            environment: Dict of environment variables to set
             volumes: Dict mapping host paths to container paths (e.g., {"/local": "/workspace"})
             image: Docker image to use (default: "sandbox:latest")
             cpu_quota: CPU quota for the container (default: 50000)
@@ -71,6 +73,7 @@ class Sandbox:
             container = client.containers.run(
                 image=image,
                 detach=True,
+                environment=environment,
                 cpu_quota=cpu_quota,
                 mem_limit=mem_limit,
                 network_mode=network_mode,
