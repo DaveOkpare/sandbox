@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "TypeScript bindings generator for MCP servers",
   "type": "module",
-  "main": "generate.ts",
+  "main": "src/generate.ts",
   "scripts": {
-    "generate": "tsx generate.ts",
+    "generate": "tsx src/generate.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

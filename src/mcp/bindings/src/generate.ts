@@ -132,7 +132,7 @@ async function generatePackageJson(outputDir: string): Promise<void> {
  * @param outputDir - Output directory path
  */
 async function copyClient(outputDir: string): Promise<void> {
-  const clientSource = path.join(process.cwd(), "client.ts");
+  const clientSource = path.join(process.cwd(), "src", "client.ts");
   const clientDest = path.join(outputDir, "client.ts");
 
   const clientContent = await fs.readFile(clientSource, "utf-8");
