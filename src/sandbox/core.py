@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import json
 from typing import Optional
 import docker
 from docker.errors import ImageNotFound
@@ -81,10 +82,19 @@ class Sandbox:
             logger.info(f"Image {image} not found, building...")
             build_image(tag=image, dockerfile_path=dockerfile_path, mcp=mcp)
 
+        # Prepare environment variables
+        _environment = environment or {}
+
+        # Add MCP server configurations as environment variables
+        if mcp:
+            for server_name, server_config in mcp.items():
+                env_var_name = f"MCP_SERVER_{server_name.upper()}"
+                _environment[env_var_name] = json.dumps(server_config)
+
         container = client.containers.run(
             image=image,
             detach=True,
-            environment=environment,
+            environment=_environment,
             cpu_quota=cpu_quota,
             mem_limit=mem_limit,
             network_mode=network_mode,
