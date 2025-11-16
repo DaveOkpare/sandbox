@@ -216,3 +216,6 @@ pnpm-debug.log*
 
 # TypeScript
 *.tsbuildinfo
+
+# Generated MCP bindings
+src/mcp/.generated/
