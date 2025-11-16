@@ -155,7 +155,7 @@ export async function writeToolFiles(
     }
 
     // Generate the tool function file
-    const toolContent = `import { callMCPTool } from "../client.js";
+    const toolContent = `import { callMCPTool } from "../client";
 
 ${inputInterface}
 ${outputInterface ? `\n${outputInterface}\n` : ""}
@@ -175,7 +175,7 @@ ${tool.description ? `/* ${tool.description} */\n` : ""}export async function ${
     functionNames
       .map((name) => {
         const capitalizedName = name.charAt(0).toUpperCase() + name.slice(1);
-        return `export { ${name}, ${capitalizedName}Input } from "./${name}.js";`;
+        return `export { ${name}, ${capitalizedName}Input } from "./${name}";`;
       })
       .join("\n") + "\n";
 

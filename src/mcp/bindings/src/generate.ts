@@ -78,14 +78,16 @@ async function generateTsConfig(outputDir: string): Promise<void> {
   const tsConfig = {
     compilerOptions: {
       target: "ES2022",
-      module: "NodeNext",
-      moduleResolution: "NodeNext",
+      module: "ESNext",
+      moduleResolution: "bundler",
       lib: ["ES2022"],
       esModuleInterop: true,
       skipLibCheck: true,
       strict: true,
       resolveJsonModule: true,
       forceConsistentCasingInFileNames: true,
+      allowImportingTsExtensions: true,
+      noEmit: true,
     },
     include: ["**/*.ts"],
     exclude: ["node_modules"],
