@@ -15,6 +15,12 @@
     "sourceMap": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["*.ts", "../.generated/**/*.ts", "src/client.ts", "src/converter.ts", "src/generate.ts"],
+  "include": [
+    "*.ts",
+    "../.generated/**/*.ts",
+    "src/client.ts",
+    "src/converter.ts",
+    "src/generate.ts"
+  ],
   "exclude": ["node_modules", "dist", ".output"]
 }

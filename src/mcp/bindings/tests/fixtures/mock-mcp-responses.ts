@@ -4,198 +4,198 @@
  */
 
 export const simpleToolSchema = {
-  name: 'get_user',
-  description: 'Get user information by ID',
+  name: "get_user",
+  description: "Get user information by ID",
   inputSchema: {
-    type: 'object',
+    type: "object",
     properties: {
       user_id: {
-        type: 'string',
-        description: 'The user ID',
+        type: "string",
+        description: "The user ID",
       },
     },
-    required: ['user_id'],
+    required: ["user_id"],
   },
 };
 
 export const complexNestedSchema = {
-  name: 'create_project',
-  description: 'Create a new project with nested configuration',
+  name: "create_project",
+  description: "Create a new project with nested configuration",
   inputSchema: {
-    type: 'object',
+    type: "object",
     properties: {
       name: {
-        type: 'string',
-        description: 'Project name',
+        type: "string",
+        description: "Project name",
       },
       config: {
-        type: 'object',
+        type: "object",
         properties: {
           enabled: {
-            type: 'boolean',
-            description: 'Whether the project is enabled',
+            type: "boolean",
+            description: "Whether the project is enabled",
           },
           settings: {
-            type: 'object',
+            type: "object",
             properties: {
               timeout: {
-                type: 'number',
-                description: 'Timeout in seconds',
+                type: "number",
+                description: "Timeout in seconds",
               },
               retries: {
-                type: 'number',
-                description: 'Number of retries',
+                type: "number",
+                description: "Number of retries",
               },
             },
-            required: ['timeout'],
+            required: ["timeout"],
           },
         },
-        required: ['enabled'],
+        required: ["enabled"],
       },
       tags: {
-        type: 'array',
+        type: "array",
         items: {
-          type: 'string',
+          type: "string",
         },
-        description: 'Project tags',
+        description: "Project tags",
       },
     },
-    required: ['name', 'config'],
+    required: ["name", "config"],
   },
 };
 
 export const arrayToolSchema = {
-  name: 'batch_update_items',
-  description: 'Update multiple items in batch',
+  name: "batch_update_items",
+  description: "Update multiple items in batch",
   inputSchema: {
-    type: 'object',
+    type: "object",
     properties: {
       items: {
-        type: 'array',
+        type: "array",
         items: {
-          type: 'object',
+          type: "object",
           properties: {
             id: {
-              type: 'string',
+              type: "string",
             },
             value: {
-              type: 'number',
+              type: "number",
             },
           },
-          required: ['id', 'value'],
+          required: ["id", "value"],
         },
       },
     },
-    required: ['items'],
+    required: ["items"],
   },
 };
 
 export const optionalFieldsSchema = {
-  name: 'search_documents',
-  description: 'Search documents with optional filters',
+  name: "search_documents",
+  description: "Search documents with optional filters",
   inputSchema: {
-    type: 'object',
+    type: "object",
     properties: {
       query: {
-        type: 'string',
-        description: 'Search query',
+        type: "string",
+        description: "Search query",
       },
       limit: {
-        type: 'number',
-        description: 'Maximum number of results',
+        type: "number",
+        description: "Maximum number of results",
       },
       offset: {
-        type: 'number',
-        description: 'Result offset for pagination',
+        type: "number",
+        description: "Result offset for pagination",
       },
       filters: {
-        type: 'object',
+        type: "object",
         properties: {
           author: {
-            type: 'string',
+            type: "string",
           },
           date_from: {
-            type: 'string',
+            type: "string",
           },
           date_to: {
-            type: 'string',
+            type: "string",
           },
         },
       },
     },
-    required: ['query'],
+    required: ["query"],
   },
 };
 
 export const toolWithoutOutputSchema = {
-  name: 'send_notification',
-  description: 'Send a notification to user',
+  name: "send_notification",
+  description: "Send a notification to user",
   inputSchema: {
-    type: 'object',
+    type: "object",
     properties: {
       user_id: {
-        type: 'string',
+        type: "string",
       },
       message: {
-        type: 'string',
+        type: "string",
       },
     },
-    required: ['user_id', 'message'],
+    required: ["user_id", "message"],
   },
 };
 
 export const toolWithOutputSchema = {
-  name: 'calculate_stats',
-  description: 'Calculate statistics for a dataset',
+  name: "calculate_stats",
+  description: "Calculate statistics for a dataset",
   inputSchema: {
-    type: 'object',
+    type: "object",
     properties: {
       dataset_id: {
-        type: 'string',
+        type: "string",
       },
     },
-    required: ['dataset_id'],
+    required: ["dataset_id"],
   },
   outputSchema: {
-    type: 'object',
+    type: "object",
     properties: {
       mean: {
-        type: 'number',
+        type: "number",
       },
       median: {
-        type: 'number',
+        type: "number",
       },
       std_dev: {
-        type: 'number',
+        type: "number",
       },
       count: {
-        type: 'number',
+        type: "number",
       },
     },
-    required: ['mean', 'median', 'std_dev', 'count'],
+    required: ["mean", "median", "std_dev", "count"],
   },
 };
 
 export const emptyPropertiesSchema = {
-  name: 'ping',
-  description: 'Health check endpoint',
+  name: "ping",
+  description: "Health check endpoint",
   inputSchema: {
-    type: 'object',
+    type: "object",
     properties: {},
   },
 };
 
 export const toolWithSpecialChars = {
-  name: 'get_data_v2',
-  description: 'Get data (version 2)',
+  name: "get_data_v2",
+  description: "Get data (version 2)",
   inputSchema: {
-    type: 'object',
+    type: "object",
     properties: {
       id: {
-        type: 'string',
+        type: "string",
       },
     },
-    required: ['id'],
+    required: ["id"],
   },
 };
 
@@ -204,19 +204,19 @@ export const toolWithSpecialChars = {
  */
 export const mockServerConfig = {
   test_server: {
-    command: 'node',
-    args: ['test-server.js'],
+    command: "node",
+    args: ["test-server.js"],
   },
 };
 
 export const mockMultiServerConfig = {
   server_one: {
-    command: 'node',
-    args: ['server1.js'],
+    command: "node",
+    args: ["server1.js"],
   },
   server_two: {
-    command: 'node',
-    args: ['server2.js'],
+    command: "node",
+    args: ["server2.js"],
   },
 };
 
@@ -225,25 +225,25 @@ export const mockMultiServerConfig = {
  */
 export const mockServerTools = [
   {
-    serverName: 'test_server',
+    serverName: "test_server",
     tools: [simpleToolSchema, complexNestedSchema, arrayToolSchema],
   },
 ];
 
 export const mockMultiServerTools = [
   {
-    serverName: 'server_one',
+    serverName: "server_one",
     tools: [simpleToolSchema, optionalFieldsSchema],
   },
   {
-    serverName: 'server_two',
+    serverName: "server_two",
     tools: [toolWithOutputSchema, toolWithoutOutputSchema],
   },
 ];
 
 export const mockEmptyServerTools = [
   {
-    serverName: 'empty_server',
+    serverName: "empty_server",
     tools: [],
   },
 ];

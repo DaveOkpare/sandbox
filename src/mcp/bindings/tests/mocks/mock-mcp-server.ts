@@ -1,5 +1,5 @@
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 /**
  * Mock MCP Client for testing
@@ -19,7 +19,7 @@ export class MockMCPClient {
 
   async listTools() {
     if (!this.connected) {
-      throw new Error('Client not connected');
+      throw new Error("Client not connected");
     }
     return {
       tools: this.tools,
@@ -28,7 +28,7 @@ export class MockMCPClient {
 
   async callTool(params: { name: string; arguments?: any }) {
     if (!this.connected) {
-      throw new Error('Client not connected');
+      throw new Error("Client not connected");
     }
 
     const tool = this.tools.find((t) => t.name === params.name);
@@ -40,7 +40,7 @@ export class MockMCPClient {
     return {
       content: [
         {
-          type: 'text',
+          type: "text",
           text: JSON.stringify({ success: true, data: params.arguments }),
         },
       ],
@@ -80,7 +80,9 @@ export class MockStdioTransport {
 /**
  * Creates a mock Client instance
  */
-export function createMockClient(tools: Array<{ name: string; description?: string; inputSchema: any }> = []): Client {
+export function createMockClient(
+  tools: Array<{ name: string; description?: string; inputSchema: any }> = []
+): Client {
   const mockClient = new MockMCPClient(tools);
   return mockClient as unknown as Client;
 }
