@@ -1,9 +1,14 @@
+import json
 from pathlib import Path
+from typing import Optional
+
 import docker
 
 
 def build_image(
-    tag: str = "sandbox:latest", dockerfile_path: str = "Dockerfile"
+    tag: str = "sandbox:latest",
+    dockerfile_path: str = "docker/sandbox.Dockerfile",
+    mcp: Optional[dict[str, str]] = None,
 ) -> None:
     client = docker.from_env()
 
@@ -14,9 +19,17 @@ def build_image(
 
     print(f"Building Docker image '{tag}' from {dockerfile_path}...")
 
+    buildargs = {}
+    if mcp:
+        buildargs["MCP_CONFIG"] = json.dumps(mcp)
+
     try:
         image, _ = client.images.build(
-            path=str(project_root), tag=tag, dockerfile=str(dockerfile_path), rm=True
+            path=str(project_root),
+            tag=tag,
+            dockerfile=str(dockerfile_path),
+            buildargs=buildargs,
+            rm=True,
         )
         print(f"Successfully built image: {tag}")
         print(f"Image ID: {image.id}")

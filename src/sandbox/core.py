@@ -2,6 +2,9 @@ from dataclasses import dataclass
 from typing import Optional
 import docker
 from docker.errors import ImageNotFound
+from loguru import logger
+
+from sandbox.utils import build_image
 
 
 @dataclass
@@ -41,7 +44,9 @@ class Sandbox:
         volumes: Optional[dict[str, str]] = None,
         environment: Optional[dict[str, str]] = None,
         image: str = "sandbox:latest",
+        mcp: Optional[dict[str, str]] = None,
         *,
+        dockerfile_path: str = "docker/sandbox.Dockerfile",
         cpu_quota: int = 50000,
         mem_limit: str = "512m",
         network_mode: str = "bridge",
@@ -54,6 +59,7 @@ class Sandbox:
             environment: Dict of environment variables to set
             volumes: Dict mapping host paths to container paths (e.g., {"/local": "/workspace"})
             image: Docker image to use (default: "sandbox:latest")
+            mcp: Dict of MCP configuration to pass to the container
             cpu_quota: CPU quota for the container (default: 50000)
             mem_limit: Memory limit for the container (default: "512m")
             network_mode: Network mode for the container (default: "bridge")
@@ -70,22 +76,22 @@ class Sandbox:
                 _volumes[host_path] = {"bind": container_path, "mode": "ro"}
 
         try:
-            container = client.containers.run(
-                image=image,
-                detach=True,
-                environment=environment,
-                cpu_quota=cpu_quota,
-                mem_limit=mem_limit,
-                network_mode=network_mode,
-                remove=remove,
-                volumes=_volumes,
-                working_dir="/workspace",
-            )
+            client.images.get(image)
         except ImageNotFound:
-            raise RuntimeError(
-                f"Docker image {image} not found."
-                "Please build the image first using 'sandbox-build' or 'docker build -t sandbox:latest .'"
-            )
+            logger.info(f"Image {image} not found, building...")
+            build_image(tag=image, dockerfile_path=dockerfile_path, mcp=mcp)
+
+        container = client.containers.run(
+            image=image,
+            detach=True,
+            environment=environment,
+            cpu_quota=cpu_quota,
+            mem_limit=mem_limit,
+            network_mode=network_mode,
+            remove=remove,
+            volumes=_volumes,
+            working_dir="/workspace",
+        )
 
         if packages:
             install_cmd = f"pip install --quiet {' '.join(packages)}"
