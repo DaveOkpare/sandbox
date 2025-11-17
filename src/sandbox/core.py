@@ -41,11 +41,10 @@ class Sandbox:
     @classmethod
     def create(
         cls,
-        packages: Optional[list[str]] = None,
+        mcp: Optional[dict[str, str]] = None,
         volumes: Optional[dict[str, str]] = None,
         environment: Optional[dict[str, str]] = None,
         image: str = "sandbox:latest",
-        mcp: Optional[dict[str, str]] = None,
         *,
         dockerfile_path: str = "docker/sandbox.Dockerfile",
         cpu_quota: int = 50000,
@@ -56,11 +55,11 @@ class Sandbox:
         """
         Create a new sandbox instance.
         Args:
-            packages: List of pip packages to install
-            environment: Dict of environment variables to set
-            volumes: Dict mapping host paths to container paths (e.g., {"/local": "/workspace"})
-            image: Docker image to use (default: "sandbox:latest")
             mcp: Dict of MCP configuration to pass to the container
+            volumes: Dict mapping host paths to container paths (e.g., {"/local": "/workspace"})
+            environment: Dict of environment variables to set
+            image: Docker image to use (default: "sandbox:latest")
+            dockerfile_path: Path to the Dockerfile to use (default: "docker/sandbox.Dockerfile")
             cpu_quota: CPU quota for the container (default: 50000)
             mem_limit: Memory limit for the container (default: "512m")
             network_mode: Network mode for the container (default: "bridge")
@@ -71,16 +70,16 @@ class Sandbox:
         """
         client = docker.from_env()
 
-        _volumes = {}
-        if volumes:
-            for host_path, container_path in volumes.items():
-                _volumes[host_path] = {"bind": container_path, "mode": "ro"}
-
         try:
             client.images.get(image)
         except ImageNotFound:
             logger.info(f"Image {image} not found, building...")
             build_image(tag=image, dockerfile_path=dockerfile_path, mcp=mcp)
+
+        _volumes = {}
+        if volumes:
+            for host_path, container_path in volumes.items():
+                _volumes[host_path] = {"bind": container_path, "mode": "ro"}
 
         # Prepare environment variables
         _environment = environment or {}
@@ -103,30 +102,19 @@ class Sandbox:
             working_dir="/workspace",
         )
 
-        if packages:
-            install_cmd = f"pip install --quiet {' '.join(packages)}"
-            exit_code, output = container.exec_run(install_cmd)
-            if exit_code != 0:
-                container.stop()
-                raise RuntimeError(
-                    f"Failed to install packages: {output.decode('utf-8')}"
-                )
-
         return cls(client, container)
 
     def run(self, code: str) -> ExecutionResult:
         """
-        Execute raw Python code in the sandbox.
+        Execute raw code in the sandbox.
 
         Args:
-            code: Raw Python code to execute
+            code: Code to execute
 
         Returns:
             ExecutionResult with stdout, stderr, and exit_code
         """
-        exec_result = self.container.exec_run(
-            ["python3", "-c", code], workdir="/workspace", demux=True
-        )
+        exec_result = self.container.exec_run([code], workdir="/workspace", demux=True)
 
         # When demux=True, exec_result is a tuple: (exit_code, (stdout_bytes, stderr_bytes))
         exit_code, (stdout_bytes, stderr_bytes) = exec_result
