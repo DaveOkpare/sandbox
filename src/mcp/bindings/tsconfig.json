@@ -4,6 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "lib": ["ES2022"],
+    "types": ["node"],
     "outDir": "./dist",
     "rootDir": ".",
     "esModuleInterop": true,
@@ -20,6 +21,7 @@
     "../.generated/**/*.ts",
     "src/client.ts",
     "src/converter.ts",
+    "src/executor.ts",
     "src/generate.ts"
   ],
   "exclude": ["node_modules", "dist", ".output"]
