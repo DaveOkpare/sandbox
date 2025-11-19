@@ -50,7 +50,8 @@ class Sandbox:
         cpu_quota: int = 50000,
         mem_limit: str = "512m",
         network_mode: str = "bridge",
-        remove: bool = True,
+        remove: bool = False,
+        container_name: str = "sandbox-persistent",
     ):
         """
         Create a new sandbox instance.
@@ -63,7 +64,8 @@ class Sandbox:
             cpu_quota: CPU quota for the container (default: 50000)
             mem_limit: Memory limit for the container (default: "512m")
             network_mode: Network mode for the container (default: "bridge")
-            remove: Remove the container when it has finished running (default: True)
+            remove: Remove the container when it has finished running (default: False)
+            container_name: Name of the container (default: sandbox-persistent)
 
         Returns:
             Sandbox instance
@@ -90,17 +92,25 @@ class Sandbox:
                 env_var_name = f"MCP_SERVER_{server_name.upper()}"
                 _environment[env_var_name] = json.dumps(server_config)
 
-        container = client.containers.run(
-            image=image,
-            detach=True,
-            environment=_environment,
-            cpu_quota=cpu_quota,
-            mem_limit=mem_limit,
-            network_mode=network_mode,
-            remove=remove,
-            volumes=_volumes,
-            working_dir="/workspace",
-        )
+        try:
+            container = client.containers.get(container_name)
+            logger.info(f"Container {container_name} found, using...")
+            if container.status != "running":
+                container.start()
+        except docker.errors.NotFound:
+            logger.info(f"Container {container_name} not found, creating...")
+            container = client.containers.run(
+                image=image,
+                detach=True,
+                environment=_environment,
+                cpu_quota=cpu_quota,
+                mem_limit=mem_limit,
+                network_mode=network_mode,
+                remove=remove,
+                volumes=_volumes,
+                working_dir="/workspace",
+                name=container_name,
+            )
 
         return cls(client, container)
 

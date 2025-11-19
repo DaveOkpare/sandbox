@@ -1,0 +1,24 @@
+# Ignore everything first
+*
+
+# Then specifically include what we need
+!src/mcp/bindings/src/executor.ts
+!src/mcp/bindings/src/client.ts
+!src/mcp/bindings/src/converter.ts
+!src/mcp/bindings/package.json
+
+# Ignore common patterns
+node_modules/
+.git/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+dist/
+build/
+*.log
+.DS_Store
+.env
+.vscode/
+.idea/
