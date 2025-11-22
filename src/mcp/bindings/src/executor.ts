@@ -94,7 +94,20 @@ async function initializeMCPTools(): Promise<void> {
       });
 
       serverTools[functionName] = async (input: any) => {
-        return await callTool(serverName, tool.name, input);
+        // Auto-wrap primitive values if schema expects an object with a single required property
+        let processedInput = input;
+
+        if (input !== null && typeof input !== 'object' && tool.inputSchema) {
+          const required = tool.inputSchema.required || [];
+
+          // If there's exactly one required property, auto-wrap the value
+          if (required.length === 1) {
+            const paramName = required[0];
+            processedInput = { [paramName]: input };
+          }
+        }
+
+        return await callTool(serverName, tool.name, processedInput);
       };
     }
 
