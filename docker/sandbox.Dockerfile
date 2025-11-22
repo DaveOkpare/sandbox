@@ -29,6 +29,7 @@ COPY --from=builder /build/node_modules ./node_modules
 
 # Copy source files
 COPY src/mcp/bindings/src/executor.ts ./executor.ts
+COPY src/mcp/bindings/src/executor-utils.ts ./executor-utils.ts
 COPY src/mcp/bindings/src/client.ts ./client.ts
 COPY src/mcp/bindings/src/converter.ts ./converter.ts
 COPY src/mcp/bindings/package.json ./package.json

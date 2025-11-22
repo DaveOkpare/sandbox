@@ -2,9 +2,10 @@
 *
 
 # Then specifically include what we need
-!src/mcp/bindings/src/executor.ts
 !src/mcp/bindings/src/client.ts
 !src/mcp/bindings/src/converter.ts
+!src/mcp/bindings/src/executor.ts
+!src/mcp/bindings/src/executor-utils.ts
 !src/mcp/bindings/package.json
 
 # Ignore common patterns
