@@ -1,5 +1,5 @@
 import { fetchToolSchemas } from "./converter.js";
-import { closeAllConnections } from "./client.js";
+import { runExecutor, originalConsole } from "./executor-utils.js";
 
 declare const global: any;
 
@@ -12,21 +12,8 @@ interface ToolInfo {
   outputSchema?: any;
 }
 
-interface ExecutionResult {
-  result: any;
-  logs: string[];
-  exitCode: 0 | 1;
-  error?: string;
-}
-
 const toolsMetadata: ToolInfo[] = [];
 let isInitialized = false;
-
-const originalConsole = {
-  log: console.log,
-  error: console.error,
-  warn: console.warn,
-};
 
 // ============================================
 // Helper Functions
@@ -55,7 +42,6 @@ function getMCPConfigFromEnv(): Record<string, any> {
 
 async function callTool(serverName: string, toolName: string, input: any): Promise<any> {
   const { callMCPTool } = await import("./client.js");
-
   return callMCPTool(`${serverName}__${toolName}`, input);
 }
 
@@ -142,103 +128,13 @@ async function initializeMCPTools(): Promise<void> {
 }
 
 // ============================================
-// Console Capture
+// Main Execution Handler
 // ============================================
 
-function createLogCapture(): { logs: string[], start: () => void, stop: () => void } {
-  const logs: string[] = [];
-
-  const start = () => {
-    console.log = (...args: any[]) => {
-      logs.push(args.map(arg =>
-        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-      ).join(' '));
-    };
-
-    console.error = (...args: any[]) => {
-      logs.push('[ERROR] ' + args.map(arg =>
-        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-      ).join(' '));
-    };
-
-    console.warn = (...args: any[]) => {
-      logs.push('[WARN] ' + args.map(arg =>
-        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-      ).join(' '));
-    };
-  };
-
-  const stop = () => {
-    console.log = originalConsole.log;
-    console.error = originalConsole.error;
-    console.warn = originalConsole.warn;
-  };
-
-  return { logs, start, stop };
-}
-
-// ============================================
-// Code Execution
-// ============================================
-
-async function executeCode(code: string): Promise<ExecutionResult> {
+runExecutor(async (code: string) => {
   await initializeMCPTools();
 
-  const logCapture = createLogCapture();
-  logCapture.start();
-
-  try {
-    const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-    const fn = new AsyncFunction(code);
-    const result = await fn();
-
-    logCapture.stop();
-
-    return {
-      result,
-      logs: logCapture.logs,
-      exitCode: 0,
-    };
-
-  } catch (error) {
-    logCapture.stop();
-
-    return {
-      result: null,
-      logs: logCapture.logs,
-      exitCode: 1,
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
-}
-
-// ============================================
-// CLI Entry Point
-// ============================================
-
-async function main() {
-  const code = process.argv[2];
-
-  if (!code) {
-    originalConsole.error("Usage: tsx executor.ts '<code>'");
-    process.exit(1);
-  }
-
-  try {
-    const result = await executeCode(code);
-    originalConsole.log(JSON.stringify(result));
-    process.exit(result.exitCode);
-
-  } catch (error) {
-    originalConsole.error("Fatal error:", error);
-    process.exit(1);
-
-  } finally {
-    await closeAllConnections();
-  }
-}
-
-// Run if executed directly
-if (process.argv[1] === new URL(import.meta.url).pathname) {
-  main();
-}
+  const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
+  const fn = new AsyncFunction(code);
+  return await fn();
+});
