@@ -1,5 +1,3 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { compile } from "json-schema-to-typescript";
 import * as fs from "fs/promises";
 import * as path from "path";
@@ -34,11 +32,36 @@ function toKebabCase(str: string): string {
 }
 
 /**
+ * Normalize incomplete schemas from MCP servers
+ * Some servers return schemas with only $schema field, missing type/properties
+ */
+function normalizeSchema(schema: any): any {
+  if (!schema) {
+    return { type: "object", properties: {}, required: [] };
+  }
+
+  if (!schema.type) {
+    return {
+      ...schema,
+      type: "object",
+      properties: schema.properties || {},
+      required: schema.required || [],
+    };
+  }
+
+  return schema;
+}
+
+/**
  * Connect to MCP servers and fetch tool schemas
+ * Intercepts raw messages before SDK validation to handle incomplete schemas
  * @param mcpConfig - Configuration for all MCP servers
  * @returns Array of server tools with their schemas
  */
 export async function fetchToolSchemas(mcpConfig: MCPConfig): Promise<ServerTools[]> {
+  const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
+  const { StdioClientTransport } = await import("@modelcontextprotocol/sdk/client/stdio.js");
+
   const serverToolsList: ServerTools[] = [];
 
   for (const [serverName, config] of Object.entries(mcpConfig)) {
@@ -54,18 +77,43 @@ export async function fetchToolSchemas(mcpConfig: MCPConfig): Promise<ServerTool
       version: "1.0.0",
     });
 
+    let rawToolsData: any = null;
+
+    const originalOnMessage = (transport as any).onmessage;
+    (transport as any).onmessage = function (message: any) {
+      if (message?.result?.tools) {
+        rawToolsData = message.result.tools;
+      }
+      if (originalOnMessage) {
+        return originalOnMessage.call(this, message);
+      }
+    };
+
     try {
       await client.connect(transport);
       console.log(`✅ Connected to ${serverName}`);
 
-      const toolsResponse = await client.listTools();
-      console.log(`📋 Found ${toolsResponse.tools.length} tools in ${serverName}`);
+      try {
+        const toolsResponse = await client.listTools();
+        rawToolsData = toolsResponse.tools;
+      } catch (error: any) {
+        if (!rawToolsData) {
+          throw error;
+        }
+        console.log(`⚠️  SDK validation failed, using intercepted data...`);
+      }
 
-      const tools: ToolSchema[] = toolsResponse.tools.map((tool) => ({
+      if (!rawToolsData) {
+        throw new Error("Failed to retrieve tools data");
+      }
+
+      console.log(`📋 Found ${rawToolsData.length} tools in ${serverName}`);
+
+      const tools: ToolSchema[] = rawToolsData.map((tool: any) => ({
         name: tool.name,
         description: tool.description,
-        inputSchema: tool.inputSchema,
-        outputSchema: (tool as any).outputSchema,
+        inputSchema: normalizeSchema(tool.inputSchema),
+        outputSchema: tool.outputSchema ? normalizeSchema(tool.outputSchema) : undefined,
       }));
 
       serverToolsList.push({
@@ -76,6 +124,9 @@ export async function fetchToolSchemas(mcpConfig: MCPConfig): Promise<ServerTool
       await transport.close();
     } catch (error) {
       console.error(`❌ Error connecting to ${serverName}:`, error);
+      try {
+        await transport.close();
+      } catch { }
       throw error;
     }
   }
@@ -94,17 +145,16 @@ export async function convertSchemaToTypeScript(
   interfaceName: string
 ): Promise<string> {
   try {
-    // Remove titles from properties to generate inline types instead of separate exports
     const cleanedSchema = {
       ...schema,
       title: interfaceName,
       properties: schema.properties
         ? Object.fromEntries(
-            Object.entries(schema.properties).map(([key, prop]: [string, any]) => [
-              key,
-              { ...prop, title: undefined },
-            ])
-          )
+          Object.entries(schema.properties).map(([key, prop]: [string, any]) => [
+            key,
+            { ...prop, title: undefined },
+          ])
+        )
         : undefined,
     };
 
@@ -154,7 +204,6 @@ export async function writeToolFiles(
       outputType = outputInterfaceName;
     }
 
-    // Generate the tool function file
     const toolContent = `import { callMCPTool } from "../client";
 
 ${inputInterface}
@@ -164,13 +213,11 @@ ${tool.description ? `/* ${tool.description} */\n` : ""}export async function ${
 }
 `;
 
-    // Write tool file
     const toolFilePath = path.join(serverDir, `${functionName}.ts`);
     await fs.writeFile(toolFilePath, toolContent, "utf-8");
     console.log(`  ✓ ${functionName}.ts`);
   }
 
-  // Generate index.ts barrel export with proper interface names
   const indexContent =
     functionNames
       .map((name) => {
