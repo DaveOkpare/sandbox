@@ -7,6 +7,7 @@
 !src/mcp/bindings/src/executor.ts
 !src/mcp/bindings/src/executor-utils.ts
 !src/mcp/bindings/package.json
+!src/mcp/bindings/pnpm-lock.yaml
 
 # Ignore common patterns
 node_modules/

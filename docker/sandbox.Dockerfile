@@ -4,22 +4,26 @@ FROM node:20-alpine AS builder
 # Set working directory
 WORKDIR /build
 
-# Copy only package files first (better layer caching)
-COPY src/mcp/bindings/package.json ./
+# Install pnpm globally
+RUN npm install -g pnpm
 
-# Install dependencies and clean cache in one layer
-RUN npm install --omit=dev --no-audit --no-fund \
-    && npm cache clean --force
+# Copy package files including lock file (better layer caching)
+COPY src/mcp/bindings/package.json src/mcp/bindings/pnpm-lock.yaml ./
+
+# Install dependencies with frozen lockfile for deterministic builds
+RUN pnpm install --prod --frozen-lockfile \
+    && pnpm store prune
 
 # Final stage - minimal runtime
-FROM node:20-alpine
+FROM node:20-slim
 
 # Install Python, uv, and tsx in one layer
-RUN apk add --no-cache python3 py3-pip \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 python3-pip python3-venv \
     && pip3 install --no-cache-dir uv --break-system-packages \
     && npm install -g tsx \
     && npm cache clean --force \
-    && rm -rf /root/.npm
+    && rm -rf /root/.npm /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /workspace
