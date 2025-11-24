@@ -16,9 +16,10 @@ class ExecutionResult:
 
 
 class Sandbox:
-    def __init__(self, client, container) -> None:
+    def __init__(self, client, container, exec_cmd) -> None:
         self.client = client
         self.container = container
+        self.exec_cmd = exec_cmd
 
     def __enter__(self):
         """Enter the context manager."""
@@ -45,6 +46,7 @@ class Sandbox:
         volumes: Optional[dict[str, str]] = None,
         environment: Optional[dict[str, str]] = None,
         image: str = "sandbox:latest",
+        exec_cmd: str = "tsx executor.ts",
         *,
         dockerfile_path: str = "docker/sandbox.Dockerfile",
         cpu_quota: int = 50000,
@@ -60,6 +62,7 @@ class Sandbox:
             volumes: Dict mapping host paths to container paths (e.g., {"/local": "/workspace"})
             environment: Dict of environment variables to set
             image: Docker image to use (default: "sandbox:latest")
+            exec_cmd: Command to run in the container (default: "tsx executor.ts")
             dockerfile_path: Path to the Dockerfile to use (default: "docker/sandbox.Dockerfile")
             cpu_quota: CPU quota for the container (default: 50000)
             mem_limit: Memory limit for the container (default: "512m")
@@ -112,7 +115,7 @@ class Sandbox:
                 name=container_name,
             )
 
-        return cls(client, container)
+        return cls(client, container, exec_cmd)
 
     def run(self, code: str) -> ExecutionResult:
         """
@@ -124,7 +127,9 @@ class Sandbox:
         Returns:
             ExecutionResult with stdout, stderr, and exit_code
         """
-        exec_result = self.container.exec_run([code], workdir="/workspace", demux=True)
+        exec_result = self.container.exec_run(
+            [*self.exec_cmd.split(), code], workdir="/workspace", demux=True
+        )
 
         # When demux=True, exec_result is a tuple: (exit_code, (stdout_bytes, stderr_bytes))
         exit_code, (stdout_bytes, stderr_bytes) = exec_result
