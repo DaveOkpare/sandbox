@@ -1,42 +1,20 @@
-# Multi-stage build for minimal image size
-FROM node:20-alpine AS builder
+FROM python:3.13-slim
 
-# Set working directory
-WORKDIR /build
+# Install Node.js and npm (required for MCP servers that use npx)
+RUN apt-get update && apt-get install -y \
+    nodejs \
+    npm \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install pnpm globally
-RUN npm install -g pnpm
-
-# Copy package files including lock file (better layer caching)
-COPY src/mcp/bindings/package.json src/mcp/bindings/pnpm-lock.yaml ./
-
-# Install dependencies with frozen lockfile for deterministic builds
-RUN pnpm install --prod --frozen-lockfile \
-    && pnpm store prune
-
-# Final stage - minimal runtime
-FROM node:20-slim
-
-# Install Python, uv, and tsx in one layer
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 python3-pip python3-venv \
-    && pip3 install --no-cache-dir uv --break-system-packages \
-    && npm install -g tsx \
-    && npm cache clean --force \
-    && rm -rf /root/.npm /var/lib/apt/lists/*
+# Install mcp2py and its dependencies
+RUN pip install --no-cache-dir mcp2py fastmcp
 
 # Set working directory
 WORKDIR /workspace
 
-# Copy installed dependencies from builder
-COPY --from=builder /build/node_modules ./node_modules
+# Set PYTHONPATH so mounted files can be imported directly
+ENV PYTHONPATH=/workspace
 
-# Copy source files
-COPY src/mcp/bindings/src/executor.ts ./executor.ts
-COPY src/mcp/bindings/src/executor-utils.ts ./executor-utils.ts
-COPY src/mcp/bindings/src/client.ts ./client.ts
-COPY src/mcp/bindings/src/converter.ts ./converter.ts
-COPY src/mcp/bindings/package.json ./package.json
-
-# Keep container running
+# Keep container running for exec commands
 CMD ["tail", "-f", "/dev/null"]
