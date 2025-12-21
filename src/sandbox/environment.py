@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
 import docker
@@ -12,11 +13,7 @@ class ExecutionResult:
     stderr: str
 
 
-class DockerEnv:
-    def __init__(self, client, container) -> None:
-        self.client = client
-        self.container = container
-
+class Environment(ABC):
     def __enter__(self):
         """Enter the context manager."""
         return self
@@ -25,6 +22,21 @@ class DockerEnv:
         """Exit the context manager and clean up the container."""
         self.cleanup()
         return False
+
+    @abstractmethod
+    def cleanup(self, *args, **kwargs): ...
+
+    @classmethod
+    @abstractmethod
+    def create(cls, *args, **kwargs): ...
+
+    @abstractmethod
+    def run(self, command: str) -> ExecutionResult: ...
+
+
+class DockerEnv(Environment):
+    def __init__(self, container) -> None:
+        self.container = container
 
     def cleanup(self, remove_volume: bool = True):
         """Stop and remove the container."""
@@ -46,7 +58,7 @@ class DockerEnv:
         mem_limit: str = "512m",
         network_mode: str = "bridge",
         remove: bool = False,
-        container_name: str = "sandbox-persistent",
+        container_name: str = "sandbox",
     ):
         """
         Create a new Docker environment.
@@ -58,7 +70,7 @@ class DockerEnv:
             mem_limit: Memory limit for the container (default: "512m")
             network_mode: Network mode for the container (default: "bridge")
             remove: Remove the container when it has finished running (default: False)
-            container_name: Name of the container (default: sandbox-persistent)
+            container_name: Name of the container (default: sandbox)
 
         Returns:
             Docker environment instance
@@ -99,14 +111,14 @@ class DockerEnv:
                 name=container_name,
             )
 
-        return cls(client, container)
+        return cls(container)
 
-    def run(self, code: str) -> ExecutionResult:
+    def run(self, code: str | list) -> ExecutionResult:
         """
         Execute raw code in the Docker environment.
 
         Args:
-            code: Code to execute
+            code: Command to execute (string or list of arguments)
 
         Returns:
             ExecutionResult with stdout, stderr, and exit_code
