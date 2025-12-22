@@ -5,6 +5,8 @@ import docker
 from docker.errors import ImageNotFound
 from loguru import logger
 
+from sandbox.utils import build_image
+
 
 @dataclass
 class ExecutionResult:
@@ -53,6 +55,7 @@ class DockerEnv(Environment):
         volumes: Optional[dict[str, str]] = None,
         environment: Optional[dict[str, str]] = None,
         image: str = "sandbox:latest",
+        dockerfile_path: str = "docker/sandbox.Dockerfile",
         *,
         cpu_quota: int = 50000,
         mem_limit: str = "512m",
@@ -81,7 +84,9 @@ class DockerEnv(Environment):
             client.images.get(image)
         except ImageNotFound:
             logger.info(f"Image {image} not found...")
-            raise
+            logger.info(f"Building image {image} from {dockerfile_path}...")
+            build_image(tag=image, dockerfile_path=dockerfile_path)
+            logger.info(f"Image {image} built successfully.")
 
         _volumes = {}
         if volumes:
