@@ -1,11 +1,9 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-import json
 from typing import Optional
 import docker
 from docker.errors import ImageNotFound
 from loguru import logger
-
-from sandbox.utils import build_image
 
 
 @dataclass
@@ -15,11 +13,7 @@ class ExecutionResult:
     stderr: str
 
 
-class Sandbox:
-    def __init__(self, client, container) -> None:
-        self.client = client
-        self.container = container
-
+class Environment(ABC):
     def __enter__(self):
         """Enter the context manager."""
         return self
@@ -28,6 +22,21 @@ class Sandbox:
         """Exit the context manager and clean up the container."""
         self.cleanup()
         return False
+
+    @abstractmethod
+    def cleanup(self, *args, **kwargs): ...
+
+    @classmethod
+    @abstractmethod
+    def create(cls, *args, **kwargs): ...
+
+    @abstractmethod
+    def run(self, command: str) -> ExecutionResult: ...
+
+
+class DockerEnv(Environment):
+    def __init__(self, container) -> None:
+        self.container = container
 
     def cleanup(self, remove_volume: bool = True):
         """Stop and remove the container."""
@@ -41,40 +50,38 @@ class Sandbox:
     @classmethod
     def create(
         cls,
-        mcp: Optional[dict[str, str]] = None,
         volumes: Optional[dict[str, str]] = None,
         environment: Optional[dict[str, str]] = None,
         image: str = "sandbox:latest",
         *,
-        dockerfile_path: str = "docker/sandbox.Dockerfile",
         cpu_quota: int = 50000,
         mem_limit: str = "512m",
         network_mode: str = "bridge",
-        remove: bool = True,
+        remove: bool = False,
+        container_name: str = "sandbox",
     ):
         """
-        Create a new sandbox instance.
+        Create a new Docker environment.
         Args:
-            mcp: Dict of MCP configuration to pass to the container
             volumes: Dict mapping host paths to container paths (e.g., {"/local": "/workspace"})
             environment: Dict of environment variables to set
             image: Docker image to use (default: "sandbox:latest")
-            dockerfile_path: Path to the Dockerfile to use (default: "docker/sandbox.Dockerfile")
             cpu_quota: CPU quota for the container (default: 50000)
             mem_limit: Memory limit for the container (default: "512m")
             network_mode: Network mode for the container (default: "bridge")
-            remove: Remove the container when it has finished running (default: True)
+            remove: Remove the container when it has finished running (default: False)
+            container_name: Name of the container (default: sandbox)
 
         Returns:
-            Sandbox instance
+            Docker environment instance
         """
         client = docker.from_env()
 
         try:
             client.images.get(image)
         except ImageNotFound:
-            logger.info(f"Image {image} not found, building...")
-            build_image(tag=image, dockerfile_path=dockerfile_path, mcp=mcp)
+            logger.info(f"Image {image} not found...")
+            raise
 
         _volumes = {}
         if volumes:
@@ -84,37 +91,39 @@ class Sandbox:
         # Prepare environment variables
         _environment = environment or {}
 
-        # Add MCP server configurations as environment variables
-        if mcp:
-            for server_name, server_config in mcp.items():
-                env_var_name = f"MCP_SERVER_{server_name.upper()}"
-                _environment[env_var_name] = json.dumps(server_config)
+        try:
+            container = client.containers.get(container_name)
+            logger.info(f"Container {container_name} found, using...")
+            if container.status != "running":
+                container.start()
+        except docker.errors.NotFound:
+            logger.info(f"Container {container_name} not found, creating...")
+            container = client.containers.run(
+                image=image,
+                detach=True,
+                environment=_environment,
+                cpu_quota=cpu_quota,
+                mem_limit=mem_limit,
+                network_mode=network_mode,
+                remove=remove,
+                volumes=_volumes,
+                working_dir="/workspace",
+                name=container_name,
+            )
 
-        container = client.containers.run(
-            image=image,
-            detach=True,
-            environment=_environment,
-            cpu_quota=cpu_quota,
-            mem_limit=mem_limit,
-            network_mode=network_mode,
-            remove=remove,
-            volumes=_volumes,
-            working_dir="/workspace",
-        )
+        return cls(container)
 
-        return cls(client, container)
-
-    def run(self, code: str) -> ExecutionResult:
+    def run(self, code: str | list) -> ExecutionResult:
         """
-        Execute raw code in the sandbox.
+        Execute raw code in the Docker environment.
 
         Args:
-            code: Code to execute
+            code: Command to execute (string or list of arguments)
 
         Returns:
             ExecutionResult with stdout, stderr, and exit_code
         """
-        exec_result = self.container.exec_run([code], workdir="/workspace", demux=True)
+        exec_result = self.container.exec_run(code, workdir="/workspace", demux=True)
 
         # When demux=True, exec_result is a tuple: (exit_code, (stdout_bytes, stderr_bytes))
         exit_code, (stdout_bytes, stderr_bytes) = exec_result

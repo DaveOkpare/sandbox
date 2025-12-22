@@ -1,0 +1,68 @@
+# Version control
+.git/
+.gitignore
+
+# Python virtual environments and cache
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+.tox/
+htmlcov/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# IDE and editor files
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Environment and config files
+.env
+.env.*
+*.local
+
+# Logs
+*.log
+
+# Node.js (if any)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Lock files (not needed in Docker image)
+uv.lock
+poetry.lock
+Pipfile.lock
+pnpm-lock.yaml
+
+# Documentation and examples (not needed for runtime)
+*.md
+CLAUDE.md
+LICENSE
+example_*.py
+simple_example.py
+test_*.py
+
+# Old/deleted directories
+src/mcp/bindings/
+
+# Temporary files
+*.tmp
+*.bak
+.cache/
