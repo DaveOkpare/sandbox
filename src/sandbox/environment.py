@@ -69,6 +69,7 @@ class DockerEnv(Environment):
             volumes: Dict mapping host paths to container paths (e.g., {"/local": "/workspace"})
             environment: Dict of environment variables to set
             image: Docker image to use (default: "sandbox:latest")
+            dockerfile_path: Path to Dockerfile (default: "docker/sandbox.Dockerfile")
             cpu_quota: CPU quota for the container (default: 50000)
             mem_limit: Memory limit for the container (default: "512m")
             network_mode: Network mode for the container (default: "bridge")
